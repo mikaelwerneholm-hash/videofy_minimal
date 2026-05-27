@@ -31,6 +31,8 @@ interface StoreState {
   setGenerationId: (id: string) => void;
   selectedProject?: ProjectOption;
   setSelectedProject: (project?: ProjectOption) => void;
+  selectedVoiceId: string | undefined;
+  setSelectedVoiceId: (voiceId: string | undefined) => void;
 }
 
 export const useGlobalState = create<StoreState>()(
@@ -52,5 +54,7 @@ export const useGlobalState = create<StoreState>()(
     setGenerationId: (generationId) => set({ generationId }),
     selectedProject: undefined,
     setSelectedProject: (selectedProject) => set({ selectedProject }),
+    selectedVoiceId: undefined,
+    setSelectedVoiceId: (selectedVoiceId) => set({ selectedVoiceId }),
   }))
 );

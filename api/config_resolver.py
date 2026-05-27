@@ -23,6 +23,9 @@ class ResolvedConfig:
     tts_model_id: str
     voice_settings: dict[str, Any]
     segment_pause_seconds: float
+    lead_silence_seconds: float
+    tail_silence_seconds: float
+    tts_substitutions: dict[str, str]
     player: dict[str, Any]
     export_defaults: dict[str, Any]
 
@@ -126,6 +129,13 @@ class ConfigResolver:
             tts_model_id=tts_model_id,
             voice_settings=voice_settings,
             segment_pause_seconds=float(pause),
+            lead_silence_seconds=float(options.get("leadSilenceSeconds", 0.0)),
+            tail_silence_seconds=float(options.get("tailSilenceSeconds", 0.0)),
+            tts_substitutions={
+                k: v
+                for k, v in (brand.get("ttsSubstitutions") or {}).items()
+                if isinstance(k, str) and isinstance(v, str)
+            },
             player=player,
             export_defaults=export_defaults,
         )

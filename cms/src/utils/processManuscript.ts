@@ -64,6 +64,7 @@ type BackendSegment = {
   mood: string;
   style: string;
   cameraMovement: string;
+  voiceDelay?: number;
   start?: number;
   end?: number;
   texts: Array<{
@@ -301,6 +302,7 @@ function toBackendManuscript(
         mood: segment.mood,
         style: segment.style,
         cameraMovement: segment.cameraMovement,
+        voiceDelay: segment.voiceDelay ?? undefined,
         texts,
         images: backendImages,
       };
@@ -410,12 +412,14 @@ interface Args {
   abortController?: AbortController;
   projectId: string;
   backendGenerationId?: string;
+  voiceId?: string;
 }
 
 export const processManuscript = async ({
   manuscript,
   projectId,
   backendGenerationId,
+  voiceId,
 }: Args): Promise<ProcessedManuscript> => {
   const processUrl = `${getDataApiUrl()}/api/projects/${projectId}/process`;
   const backendPayload = toBackendManuscript(projectId, manuscript);
@@ -429,6 +433,7 @@ export const processManuscript = async ({
       body: JSON.stringify({
         generation_id: backendGenerationId,
         manuscript: backendPayload,
+        ...(voiceId ? { voice_id: voiceId } : {}),
       }),
       cache: "no-store",
       signal: abortController.signal,

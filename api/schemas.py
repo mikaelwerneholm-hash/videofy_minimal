@@ -124,6 +124,7 @@ class Segment(BaseModel):
     texts: list[TextLine]
     text: str | None = None
     images: list[MediaAssetImage | MediaAssetVideo] = Field(default_factory=list)
+    voiceDelay: float | None = None
     start: float | None = None
     end: float | None = None
 
@@ -147,10 +148,12 @@ class Manuscript(BaseModel):
 
 class GenerateRequest(BaseModel):
     script_prompt: str | None = None
+    target_duration_seconds: int | None = None
 
 
 class ProcessRequest(BaseModel):
     manuscript: Manuscript | None = None
+    voice_id: str | None = None
 
 
 class GenerationResponse(BaseModel):

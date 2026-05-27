@@ -3,7 +3,7 @@ import path from "node:path";
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
 
-export type RenderOrientation = "vertical" | "horizontal";
+export type RenderOrientation = "vertical" | "horizontal" | "square";
 
 type RenderInput = {
   projectId: string;
@@ -44,8 +44,8 @@ export function prewarmRemotionBundle(): void {
 }
 
 export async function renderProjectVideo(input: RenderInput): Promise<string> {
-  const width = input.orientation === "vertical" ? 1080 : 1920;
-  const height = input.orientation === "vertical" ? 1920 : 1080;
+  const width = input.orientation === "vertical" ? 1080 : input.orientation === "square" ? 1080 : 1920;
+  const height = input.orientation === "vertical" ? 1920 : input.orientation === "square" ? 1080 : 1080;
 
   const inputProps = {
     manuscripts: input.manuscripts,

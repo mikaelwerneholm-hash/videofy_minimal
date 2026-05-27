@@ -1,9 +1,22 @@
 import type { FC } from 'react';
+import { SyncOutlined } from "@ant-design/icons";
 
 const LoadingCard: FC = () => (
-  <div className="flex h-96 w-full items-center rounded-lg border-2 border-gray-300 border-dashed p-12 dark:border-gray-700">
-    <span className="mt-2 block w-full text-center font-semibold text-gray-900 text-sm dark:text-gray-100">
-      Loading preview...
+  <div style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    height: 320,
+    width: "100%",
+    borderRadius: 8,
+    border: "2px dashed #2a4a5a",
+    backgroundColor: "#132230",
+  }}>
+    <SyncOutlined spin style={{ fontSize: 28, color: "#7EB3BC" }} />
+    <span style={{ color: "#7EB3BC", fontWeight: 500, fontSize: 14 }}>
+      Laddar förhandsvisning...
     </span>
   </div>
 );

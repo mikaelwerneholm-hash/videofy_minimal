@@ -23,7 +23,7 @@ const manifestSchema = z.object({
   voicePack: z.string().min(1),
   options: z
     .object({
-      orientationDefault: z.enum(["vertical", "horizontal"]).optional(),
+      orientationDefault: z.enum(["vertical", "horizontal", "square"]).optional(),
       segmentPauseSeconds: z.number().optional(),
     })
     .optional(),

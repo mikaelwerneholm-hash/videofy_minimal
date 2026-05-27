@@ -87,14 +87,14 @@ const Segment: FC<SegmentProps> = ({
                     <Input.TextArea style={{ width: "100%" }} rows={5} />
                   </Form.Item>
                   <div className="mt-1 text-[12px] text-gray-500">
-                    Add pronunciation hints in [brackets] after words
+                    Lägg till uttalstips i [hakparentes] efter ord
                   </div>
                 </Form.Item>
               </Col>
             </Row>
             <Row gutter={16}>
-              <Col span={8} key="mood">
-                <Form.Item label="Mood" name={[position, "mood"]}>
+              <Col span={6} key="mood">
+                <Form.Item label="Stämning" name={[position, "mood"]}>
                   <Select
                     options={moods.map((m) => ({
                       value: m.id,
@@ -104,8 +104,8 @@ const Segment: FC<SegmentProps> = ({
                   />
                 </Form.Item>
               </Col>
-              <Col span={8} key="cameraMovement">
-                <Form.Item label="Camera" name={[position, "cameraMovement"]}>
+              <Col span={6} key="cameraMovement">
+                <Form.Item label="Kamera" name={[position, "cameraMovement"]}>
                   <Select
                     options={cameraMovements.map((c) => ({
                       value: c.id,
@@ -115,8 +115,8 @@ const Segment: FC<SegmentProps> = ({
                   />
                 </Form.Item>
               </Col>
-              <Col span={8} key="placement">
-                <Form.Item label="Placement" name={[position, "style"]}>
+              <Col span={6} key="placement">
+                <Form.Item label="Placering" name={[position, "style"]}>
                   <Select
                     options={textPlacements.map((c) => ({
                       value: c.id,
@@ -126,11 +126,26 @@ const Segment: FC<SegmentProps> = ({
                   />
                 </Form.Item>
               </Col>
+              <Col span={6} key="voiceDelay">
+                <Form.Item label="Röstpaus" name={[position, "voiceDelay"]}>
+                  <Select
+                    options={[
+                      { value: 0, label: "Ingen" },
+                      { value: 0.5, label: "0,5 sek" },
+                      { value: 1, label: "1 sek" },
+                      { value: 1.5, label: "1,5 sek" },
+                      { value: 2, label: "2 sek" },
+                      { value: 3, label: "3 sek" },
+                    ]}
+                    popupMatchSelectWidth={false}
+                  />
+                </Form.Item>
+              </Col>
             </Row>
             <Row>
               <Form.Item
                 name={[position, "customAudio"]}
-                label="Custom audio"
+                label="Eget ljud"
                 className="w-full"
               >
                 <AudioRecorder />
@@ -139,21 +154,21 @@ const Segment: FC<SegmentProps> = ({
           </Flex>
           <Form.Item>
             <Flex vertical gap="small">
-              <Tooltip title="Add segment below">
+              <Tooltip title="Lägg till segment nedan">
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={onAdd}
                 />
               </Tooltip>
-              <Tooltip title="Duplicate segment">
+              <Tooltip title="Duplicera segment">
                 <Button
                   type="primary"
                   icon={<CopyOutlined />}
                   onClick={onDuplicate}
                 />
               </Tooltip>
-              <Tooltip title="Delete segment">
+              <Tooltip title="Ta bort segment">
                 <Button
                   danger
                   type="primary"

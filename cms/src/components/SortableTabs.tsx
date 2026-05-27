@@ -76,7 +76,7 @@ const SortableTabs: React.FC<Readonly<SortableTabsProps>> = ({
     <Tabs
       tabBarExtraContent={
         allowAdd ? (
-          <Tooltip title="Add article" placement="left">
+          <Tooltip title="Lägg till artikel" placement="left">
             <Button
               type="primary"
               icon={<PlusOutlined />}

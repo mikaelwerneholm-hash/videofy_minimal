@@ -184,7 +184,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   return (
     <div className="flex items-center p-2 border border-gray-700 rounded w-full">
       <Space>
-        <Tooltip title={state.isRecording ? "Stop" : "Record custom audio"}>
+        <Tooltip title={state.isRecording ? "Stoppa" : "Spela in eget ljud"}>
           <Button
             icon={
               state.isRecording ? (
@@ -199,7 +199,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         </Tooltip>
 
         {value?.src && !state.isRecording && (
-          <Tooltip title="Play">
+          <Tooltip title="Spela upp">
             <Button
               icon={
                 state.isPlaying ? <PauseOutlined /> : <CaretRightOutlined />
@@ -210,7 +210,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         )}
       </Space>
       <div className="flex-1 text-center">
-        {state.isSaving && <Text>Saving...</Text>}
+        {state.isSaving && <Text>Sparar...</Text>}
         {!state.isSaving &&
           value?.src &&
           !state.isRecording &&
@@ -220,15 +220,15 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         {!state.isSaving &&
           value?.src &&
           !state.isRecording &&
-          !state.audioDuration && <Text>Loading audio...</Text>}
+          !state.audioDuration && <Text>Laddar ljud...</Text>}
         {state.isRecording && (
           <Text className="text-red-500">
-            Recording... ({state.duration.toFixed(0)}s)
+            Spelar in... ({state.duration.toFixed(0)}s)
           </Text>
         )}
       </div>
       {value?.src && !state.isRecording && (
-        <Tooltip title="Delete recording">
+        <Tooltip title="Radera inspelning">
           <Button icon={<DeleteOutlined />} onClick={handleDelete} danger />
         </Tooltip>
       )}

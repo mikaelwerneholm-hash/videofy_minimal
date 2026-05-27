@@ -7,7 +7,7 @@ export type GenerationManifest = {
   promptPack: string;
   voicePack: string;
   options?: {
-    orientationDefault?: "vertical" | "horizontal";
+    orientationDefault?: "vertical" | "horizontal" | "square";
     segmentPauseSeconds?: number;
   };
   createdAt: string;

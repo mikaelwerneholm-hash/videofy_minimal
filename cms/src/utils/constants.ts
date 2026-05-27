@@ -6,30 +6,30 @@ import type {
 import type { z } from "zod";
 
 export const moods: Array<z.infer<typeof moodSchema>> = [
-  { id: "mellow", name: "Mellow" },
-  { id: "sad", name: "Sad" },
-  { id: "dramatic", name: "Dramatic" },
+  { id: "mellow", name: "Lugn" },
+  { id: "sad", name: "Allvarlig" },
+  { id: "dramatic", name: "Dramatisk" },
   { id: "neutral", name: "Neutral" },
-  { id: "hopeful", name: "Hopeful" },
-  { id: "upbeat", name: "Upbeat" },
+  { id: "hopeful", name: "Hoppfull" },
+  { id: "upbeat", name: "Positiv" },
 ];
 
 export const textPlacements: Array<z.infer<typeof textPlacementSchema>> = [
-  { id: "bottom", name: "Bottom", icon: "TextBottom" },
-  { id: "middle", name: "Middle", icon: "TextMiddle" },
-  { id: "top", name: "Top", icon: "TextTop" },
+  { id: "bottom", name: "Nederkant", icon: "TextBottom" },
+  { id: "middle", name: "Mitten", icon: "TextMiddle" },
+  { id: "top", name: "Överkant", icon: "TextTop" },
 ];
 
 export const cameraMovements: Array<z.infer<typeof cameraMovementsSchema>> = [
-  { id: "none", name: "None" },
-  { id: "pan-left", name: "Pan left" },
-  { id: "pan-right", name: "Pan right" },
-  { id: "pan-up", name: "Pan up" },
-  { id: "pan-down", name: "Pan down" },
-  { id: "zoom-in", name: "Zoom in" },
-  { id: "zoom-out", name: "Zoom out" },
-  { id: "zoom-rotate-left", name: "Zoom and rotate left" },
-  { id: "zoom-rotate-right", name: "Zoom and rotate right" },
-  { id: "zoom-out-rotate-left", name: "Zoom out and rotate left" },
-  { id: "zoom-out-rotate-right", name: "Zoom out and rotate right" },
+  { id: "none", name: "Ingen rörelse" },
+  { id: "pan-left", name: "Panorera vänster" },
+  { id: "pan-right", name: "Panorera höger" },
+  { id: "pan-up", name: "Panorera uppåt" },
+  { id: "pan-down", name: "Panorera nedåt" },
+  { id: "zoom-in", name: "Zooma in" },
+  { id: "zoom-out", name: "Zooma ut" },
+  { id: "zoom-rotate-left", name: "Zooma in och rotera vänster" },
+  { id: "zoom-rotate-right", name: "Zooma in och rotera höger" },
+  { id: "zoom-out-rotate-left", name: "Zooma ut och rotera vänster" },
+  { id: "zoom-out-rotate-right", name: "Zooma ut och rotera höger" },
 ];

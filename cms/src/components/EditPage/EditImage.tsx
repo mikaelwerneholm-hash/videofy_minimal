@@ -139,8 +139,8 @@ const EditImage = ({
       open
       onCancel={onClose}
       onOk={() => form.submit()}
-      okText="Save"
-      cancelText="Close"
+      okText="Spara"
+      cancelText="Stäng"
     >
       <Form
         form={form}
@@ -152,7 +152,7 @@ const EditImage = ({
           <>
             <Form.Item
               name="crop"
-              label="Select a hotspot (an area to be centered in the image)"
+              label="Välj fokuspunkt (det område som centreras i bilden)"
             >
               <CropControl image={image} />
             </Form.Item>
@@ -164,7 +164,7 @@ const EditImage = ({
 
         <Form.Item
           shouldUpdate
-          label={image ? "Replace image" : "Upload image"}
+          label={image ? "Ersätt bild" : "Ladda upp bild"}
           rules={[{ required: true }]}
         >
           <Upload
@@ -179,7 +179,7 @@ const EditImage = ({
                 state.loading ? <LoadingOutlined spin /> : <UploadOutlined />
               }
             >
-              {state.loading ? "Uploading image" : "Click to upload"}
+              {state.loading ? "Laddar upp bild..." : "Klicka för att ladda upp"}
             </Button>
           </Upload>
         </Form.Item>

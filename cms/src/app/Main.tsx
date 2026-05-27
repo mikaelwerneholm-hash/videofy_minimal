@@ -10,29 +10,29 @@ export default function Main({ children }: { children: ReactNode }) {
         wave={{ disabled: true }}
         theme={{
           hashed: false,
-          algorithm: theme.darkAlgorithm,
+          algorithm: theme.defaultAlgorithm,
           token: {
-            colorPrimary: "#4f39f6",
+            colorPrimary: "#03556D",
             fontSize: 16,
-            fontFamily: "Roboto Flex, sans, Helvetica, Arial",
-            colorBgBase: "#131315",
-            colorBgContainer: "#1a1a1d",
-            colorBgElevated: "rgb(34,34,40)",
+            fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif",
+            colorBgBase: "#FFFFFF",
+            colorBgContainer: "#F8FAFC",
+            colorBgElevated: "#FFFFFF",
           },
           components: {
             TreeSelect: {
               indentSize: 12,
-              controlItemBgHover: "rgba(0,0,0,0.09)",
+              controlItemBgHover: "rgba(0,0,0,0.04)",
             },
             Tabs: {
-              colorPrimary: "oklch(0.673 0.182 276.935)",
-              itemActiveColor: "white",
+              colorPrimary: "#03556D",
+              itemActiveColor: "#03556D",
             },
           },
         }}
       >
         <html
-          lang="en"
+          lang="sv"
           style={{ height: "100%" }}
         >
           <body style={{ height: "100%", margin: 0 }}>

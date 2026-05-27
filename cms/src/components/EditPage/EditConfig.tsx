@@ -127,7 +127,7 @@ const EditConfig: React.FC = () => {
       items={[
         {
           key: "config",
-          label: "Edit Config",
+          label: "Redigera konfiguration",
           children: (
             <>
               <TextArea
@@ -162,14 +162,14 @@ const EditConfig: React.FC = () => {
                 onClick={handleSaveConfig}
                 loading={state.savingConfig}
               >
-                Save Config
+                Spara konfiguration
               </Button>
             </>
           ),
         },
         {
           key: "assets",
-          label: "Upload Assets",
+          label: "Ladda upp mediafiler",
           children: (
             <>
               <Upload
@@ -199,13 +199,13 @@ const EditConfig: React.FC = () => {
                   loading={state.uploading}
                   disabled={state.uploading}
                 >
-                  {state.uploading ? "Uploading..." : "Upload media"}
+                  {state.uploading ? "Laddar upp..." : "Ladda upp mediafil"}
                 </Button>
               </Upload>
 
               {projectAssetsError && (
                 <Alert
-                  message={`Failed to load project assets: ${projectAssetsError.message}`}
+                  message={`Kunde inte ladda projektfiler: ${projectAssetsError.message}`}
                   type="error"
                   style={{ marginTop: "1rem", marginBottom: "1rem" }}
                   showIcon

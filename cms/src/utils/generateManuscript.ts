@@ -296,7 +296,8 @@ async function buildManuscriptFromBackend(
 
 export const generateManuscript = async (
   projectId: string,
-  config: Config
+  config: Config,
+  targetDurationSeconds: number = 15,
 ): Promise<ManuscriptType> => {
   const generateUrl = `${getDataApiUrl()}/api/projects/${projectId}/generate`;
   const abortController = new AbortController();
@@ -308,6 +309,7 @@ export const generateManuscript = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         script_prompt: config.manuscript.script_prompt,
+        target_duration_seconds: targetDurationSeconds,
       }),
       cache: "no-store",
       signal: abortController.signal,

@@ -56,6 +56,7 @@ export const Player = forwardRef<PlayerRef, Props>(
         compositionHeight={height}
         compositionWidth={width}
         controls
+        pauseWhenBuffering
         acknowledgeRemotionLicense
         {...rest}
       />

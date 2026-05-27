@@ -1,0 +1,81 @@
+{
+  "brand_name": "2Secure",
+  "openai": {
+    "manuscriptModel": "gpt-4o",
+    "mediaModel": "gpt-4o"
+  },
+  "ttsSubstitutions": {
+    "2Secure": "two secure",
+    "2secure": "two secure"
+  },
+  "options": {
+    "segmentPauseSeconds": 0.4,
+    "leadSilenceSeconds": 1.5,
+    "tailSilenceSeconds": 2.0
+  },
+  "exportDefaults": {
+    "exportType": "Vertical",
+    "logo": true,
+    "audio": true,
+    "voice": true,
+    "music": true
+  },
+  "voices": [
+    { "id": "aSLKtNoVBZlxQEMsnGL2", "name": "Sanna – Lugn, professionell kvinna" },
+    { "id": "pqHfZKP75CvOlQylNhV4", "name": "Bill – Lugn, auktoritativ man" },
+    { "id": "XB0fDUnXU5powFXDhCwa", "name": "Charlotte – Tydlig, informativ kvinna" },
+    { "id": "N2lVS1w4EtoT3dr4eOWO", "name": "Callum – Stark, energisk man" }
+  ],
+  "people": {
+    "default": {
+      "voice": "aSLKtNoVBZlxQEMsnGL2",
+      "model_id": "eleven_turbo_v2_5",
+      "stability": 0.5,
+      "similarity_boost": 0.8,
+      "style": 0,
+      "use_speaker_boost": true
+    }
+  },
+  "prompts": {
+    "scriptPrompt": "Du är en kommunikatör som skriver manuskript för korta informationsvideor åt säkerhetsföretaget 2Secure. 2Secure kontrollerar risk och skapar trygghet dygnet runt. Du tar emot ett underlag i användarinputen. Gör så här steg för steg:\n1: Läs underlaget och förstå vad det handlar om.\n2: Identifiera de viktigaste punkterna – vad är nytt, relevant eller viktigt för målgruppen?\n3: Sammanfatta dessa punkter på ett sakligt, tydligt och professionellt sätt. Gå rakt på innehållet, ingen välkomst- eller utfyllnadstext.\n4: Manuskriptet ska vara på svenska och bestå av max 3 meningar. Varje mening ska ge lyssnaren ny och relevant information.\n5: Den sista meningen ska ge en avslutning eller slutsats.\n6: Skriv om varje mening så att den är grammatiskt korrekt, koncis och lätt att läsa högt. Max 12 ord per mening. Använd enkla ord.\n7: Undvik specialtecken eller förkortningar som inte kan uttalas.",
+    "placementPrompt": "Du är en videoproducent som skapar ett kort informationsklipp åt 2Secure. Du får en numrerad lista med manuskriptrader och en numrerad lista med visuella element (videor, kartor och bilder). Gör så här steg för steg:\n1. Läs metadata för varje element och placera dem under de manuskriptrader de passar bäst till.\n2. Prioritera alltid videoelement om sådana finns.\n3. Försök matcha bildtext eller beskrivning med vad som nämns i manuskriptet.\n4. Placera kartor på den rad som nämner platsen för händelsen.\n5. Du behöver inte använda alla element, men använd minst ett per manuskriptrad.\n6. Använd inte samma element på mer än en rad.\n7. Kom ihåg att prioritera video.",
+    "describeImagesPrompt": "Du är en hjälpsam assistent. Du får ett antal bilder från ett underlag. Beskriv kort och sakligt vad som syns på bilden. Beskriv scenen, personer, stämning etc. Föreslå vilken typ av aktivitet eller händelse som kan pågå."
+  },
+  "player": {
+    "logo": "/api/brand-assets/brand_assets/2secure-logo-neg.png",
+    "logoStyle": "position: absolute; top: 90px; right: 65px; width: 140px;",
+    "defaultCameraMovements": [
+      "zoom-in",
+      "pan-right",
+      "zoom-in",
+      "pan-left",
+      "zoom-in",
+      "zoom-out"
+    ],
+    "colors": {
+      "text": {
+        "background": "#03556D",
+        "text": "#FFFFFF"
+      },
+      "progress": {
+        "active": {
+          "background": "#03556D",
+          "text": "#FFFFFF"
+        },
+        "inactive": {
+          "background": "#05141F",
+          "text": "#FFFFFF"
+        }
+      },
+      "map": {
+        "marker": "#03556D"
+      },
+      "fotoCredits": {
+        "text": "#7EB3BC",
+        "icon": "#7EB3BC"
+      }
+    },
+    "backgroundMusicVolume": 0.6,
+    "backgroundMusic": "https://static.vg.no/videofy/background-music/dark-mektig.mp3"
+  }
+}

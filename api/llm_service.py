@@ -47,7 +47,7 @@ class LLMService:
             ],
             text_format=SummarizationResult,
             temperature=0.4,
-            max_output_tokens=400,
+            max_output_tokens=2000,
         )
 
         parsed = response.output_parsed

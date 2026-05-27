@@ -47,7 +47,7 @@ const MediaAsset: FC<MediaAssetProps> = ({
   const mediaMenu = [
     {
       key: "image",
-      label: "Image",
+      label: "Bild",
       icon: <PictureOutlined />,
     },
     {
@@ -57,7 +57,7 @@ const MediaAsset: FC<MediaAssetProps> = ({
     },
     {
       key: "map",
-      label: "Map",
+      label: "Karta",
       icon: <CloseSquareOutlined />,
     },
   ];
@@ -86,7 +86,7 @@ const MediaAsset: FC<MediaAssetProps> = ({
             <Dropdown menu={{ items: mediaMenu, onClick: handleAddMenuClick }}>
               <Button type="primary">
                 <Space>
-                  Add media
+                  Lägg till media
                   <DownOutlined />
                 </Space>
               </Button>
@@ -104,7 +104,7 @@ const MediaAsset: FC<MediaAssetProps> = ({
           {editable && (
             <EditAssetButton
               onClick={() => (state.isEditAssetOpen = true)}
-              tooltipText="Edit image"
+              tooltipText="Redigera bild"
             />
           )}
         </>
@@ -119,12 +119,12 @@ const MediaAsset: FC<MediaAssetProps> = ({
               onClick={() => (state.isEditAssetOpen = true)}
             >
               <source src={value?.url} type="video/mp4" />
-              Your browser does not support the video tag.
+              Din webbläsare stödjer inte videouppspelning.
             </video>
             {editable && (
               <EditAssetButton
                 onClick={() => (state.isEditAssetOpen = true)}
-                tooltipText="Edit video"
+                tooltipText="Redigera video"
               />
             )}
           </div>
@@ -146,7 +146,7 @@ const MediaAsset: FC<MediaAssetProps> = ({
             </div>
             <EditAssetButton
               onClick={() => (state.isEditAssetOpen = true)}
-              tooltipText="Edit map"
+              tooltipText="Redigera karta"
             />
           </div>
         </>
@@ -158,7 +158,7 @@ const MediaAsset: FC<MediaAssetProps> = ({
         >
           <Button type="default" size="small">
             <Space>
-              Replace with...
+              Ersätt med...
               <DownOutlined />
             </Space>
           </Button>

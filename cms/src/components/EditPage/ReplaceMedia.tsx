@@ -31,7 +31,7 @@ const ReplaceMedia = ({
       items={[
         {
           key: "1",
-          label: "Other media from article",
+          label: "Annat media från artikeln",
           children: (
             <div className="gap-4 grid grid-cols-2">
               {alternativeMedia.map((i, index) => (
@@ -45,7 +45,7 @@ const ReplaceMedia = ({
                     type="primary"
                     block
                   >
-                    Select
+                    Välj
                   </Button>
                 </div>
               ))}
@@ -54,11 +54,11 @@ const ReplaceMedia = ({
         },
         {
           key: "2",
-          label: "External library",
+          label: "Externt mediabibliotek",
           children: (
             <Alert
               type="info"
-              message="External media library integrations are disabled in minimal mode."
+              message="Externa mediebibliotek är inaktiverade i denna version."
             />
           ),
         },

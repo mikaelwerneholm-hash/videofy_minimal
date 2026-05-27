@@ -7,6 +7,7 @@ import { Tab, useGlobalState } from "@/state/globalState";
 import { useRouter } from "next/navigation";
 import { Alert, App, Button, Flex, Form, Spin, Tooltip, Typography } from "antd";
 import { SettingOutlined, ShareAltOutlined } from "@ant-design/icons";
+import Image from "next/image";
 import PreviewOutput from "./Preview/PreviewOutput";
 import SortableTabs from "../SortableTabs";
 import SegmentList from "./SegmentList";
@@ -33,7 +34,7 @@ const EditPage: FC = () => {
     loadingGeneration: true,
     loadError: null as string | null,
     openArticleModal: false,
-    brandId: "default",
+    brandId: "2secure",
   });
 
   useEffect(() => {
@@ -55,18 +56,18 @@ const EditPage: FC = () => {
         );
         if (response.status === 404) {
           notification.warning({
-            title: "Project no longer exists",
-            description: "The generation was removed or the project folder was deleted.",
+            title: "Projektet finns inte längre",
+            description: "Generationen togs bort eller projektmappen raderades.",
           });
           router.replace("/");
           return;
         }
         if (!response.ok) {
-          throw new Error("Failed to fetch generation");
+          throw new Error("Kunde inte hämta generation");
         }
         const generation = await response.json();
         if (!generation.config || !generation.projectId) {
-          throw new Error("Generation payload is missing config or projectId");
+          throw new Error("Generationsdata saknar konfiguration eller projekt-ID");
         }
         setConfig({
           projectId: generation.projectId,
@@ -80,12 +81,12 @@ const EditPage: FC = () => {
           }
         );
         setGenerationId(generation.id);
-        state.brandId = generation.brandId || "default";
+        state.brandId = generation.brandId || "2secure";
         state.selectedTab = generation.data?.[0]?.manuscript?.meta?.uniqueId;
       } catch (error) {
         console.error(error);
         state.loadError =
-          error instanceof Error ? error.message : "Failed to load generation";
+          error instanceof Error ? error.message : "Kunde inte ladda projektet";
       } finally {
         state.loadingGeneration = false;
       }
@@ -121,114 +122,162 @@ const EditPage: FC = () => {
       ? params.generation[0]
       : params.generation;
     const persistId = generationId || String(idFromParams || "");
-    if (!persistId) {
-      return;
-    }
+    if (!persistId) return;
+
     const response = await fetch("/api/generations", {
       method: "PUT",
-      body: JSON.stringify({
-        id: persistId,
-        data: nextTabs,
-      }),
+      body: JSON.stringify({ id: persistId, data: nextTabs }),
     });
     if (!response.ok) {
-      throw new Error("Failed to persist generation after adding article");
+      throw new Error("Kunde inte spara artikel");
     }
   };
 
   if (state.loadingGeneration || !config) {
     return (
-      <Flex vertical align="center" justify="center" className="p-8">
+      <div style={{ minHeight: "100vh", backgroundColor: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {state.loadError ? (
           <Alert
             type="error"
-            message="Failed to load project"
+            message="Kunde inte ladda projekt"
             description={state.loadError}
             action={
               <Button type="primary" onClick={() => router.replace("/")}>
-                Back to start
+                Tillbaka till start
               </Button>
             }
           />
         ) : (
           <Flex vertical align="center" gap="small">
-            <Spin />
-            <Typography.Text>Loading project...</Typography.Text>
+            <Spin size="large" />
+            <Typography.Text style={{ color: "#03556D", fontWeight: 500 }}>
+              Laddar projekt...
+            </Typography.Text>
           </Flex>
         )}
-      </Flex>
+      </div>
     );
   }
 
   return (
-    <Form
-      preserve
-      initialValues={{ tabs, config }}
-      layout="vertical"
-      form={form}
-    >
-      <Flex vertical className="p-4">
-        <Flex className="justify-between items-center py-2">
-          <Typography.Title
-            level={5}
-            className="cursor-pointer"
-            onClick={() => {
-              router.push(`/`);
-            }}
-          >
-            Videofy
-          </Typography.Title>
-          <Flex gap="small">
-            <Tooltip title="Share video">
-              <Button
-                icon={<ShareAltOutlined />}
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  message.success("Video URL copied to clipboard.", 5);
-                }}
-              >
-                Share
-              </Button>
-            </Tooltip>
-            <Tooltip title="Edit theme">
-              <Button
-                type={state.editTheme ? "primary" : "default"}
-                icon={<SettingOutlined />}
-                onClick={() => (state.editTheme = !state.editTheme)}
-              />
-            </Tooltip>
-          </Flex>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f0f4f8", display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <header style={{
+        backgroundColor: "#05141F",
+        padding: "0 24px",
+        height: 56,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexShrink: 0,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+      }}>
+        <Image
+          src="/assets/2secure-logo-neg.png"
+          alt="2Secure"
+          width={100}
+          height={30}
+          style={{ objectFit: "contain", cursor: "pointer" }}
+          onClick={() => router.push("/")}
+        />
+        <Flex gap="small">
+          <Tooltip title="Dela video">
+            <Button
+              icon={<ShareAltOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                message.success("Video-URL kopierad till urklipp.", 5);
+              }}
+              style={{ borderColor: "#7EB3BC", color: "#7EB3BC", backgroundColor: "transparent" }}
+            >
+              Dela
+            </Button>
+          </Tooltip>
+          <Tooltip title="Redigera inställningar">
+            <Button
+              type={state.editTheme ? "primary" : "default"}
+              icon={<SettingOutlined />}
+              onClick={() => (state.editTheme = !state.editTheme)}
+              style={!state.editTheme ? { borderColor: "#7EB3BC", color: "#7EB3BC", backgroundColor: "transparent" } : {}}
+            />
+          </Tooltip>
         </Flex>
-        <Flex gap="middle">
-          <div className="xl:flex-row flex-col w-full">
-            <Form.Item noStyle className="xl:flex-1 w-full" shouldUpdate>
+      </header>
+
+      {/* Main content */}
+      <Form
+        preserve
+        initialValues={{ tabs, config }}
+        layout="vertical"
+        form={form}
+        style={{ flex: 1, display: "flex", flexDirection: "column" }}
+      >
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr minmax(0, 820px)",
+          gap: 20,
+          padding: "20px 20px 20px",
+          flex: 1,
+          alignItems: "start",
+        }}>
+          {/* Preview panel */}
+          <div style={{
+            position: "sticky",
+            top: 20,
+            backgroundColor: "#1a2a35",
+            borderRadius: 12,
+            padding: 20,
+            boxShadow: "0 4px 20px rgba(5,20,31,0.18)",
+          }}>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#7EB3BC",
+              marginBottom: 14,
+            }}>
+              Förhandsvisning
+            </div>
+            <Form.Item noStyle shouldUpdate>
               {({ getFieldsValue }) => {
                 const manuscripts = getFieldsValue(true).tabs;
-                return (
-                  <div className="xl:flex-1 w-full">
-                    <PreviewOutput tabs={manuscripts} />
-                  </div>
-                );
+                return <PreviewOutput tabs={manuscripts} />;
               }}
             </Form.Item>
           </div>
-          <div className="w-full xl:max-w-[800px] xl:grow">
-            {!state.editTheme ? (
-              <Form.List name={["tabs"]}>
-                {(tabItems, { move }) => {
-                  return (
+
+          {/* Editor panel */}
+          <div style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            boxShadow: "0 2px 12px rgba(5,20,31,0.08)",
+            overflow: "hidden",
+          }}>
+            {/* Panel header */}
+            <div style={{
+              backgroundColor: "#f8fafc",
+              borderBottom: "1px solid #e8eef3",
+              padding: "12px 20px",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#03556D",
+            }}>
+              {state.editTheme ? "Inställningar" : "Manus & segment"}
+            </div>
+
+            <div style={{ padding: "0 20px 20px" }}>
+              {!state.editTheme ? (
+                <Form.List name={["tabs"]}>
+                  {(tabItems, { move }) => (
                     <SortableTabs
                       allowAdd
-                      onAdd={() => {
-                        state.openArticleModal = true;
-                      }}
+                      onAdd={() => { state.openArticleModal = true; }}
                       activeKey={state.selectedTab}
-                      onChange={(value) => {
-                        state.selectedTab = value;
-                      }}
-                      onReorder={(from, to) => {
-                        move(from, to);
-                      }}
+                      onChange={(value) => { state.selectedTab = value; }}
+                      onReorder={(from, to) => { move(from, to); }}
                       items={tabItems.map((t, index) => {
                         const tab = form.getFieldValue(["tabs", t.name]);
                         return {
@@ -236,14 +285,8 @@ const EditPage: FC = () => {
                           label: (
                             <Flex align="center">
                               <Typography.Paragraph
-                                ellipsis={{
-                                  tooltip: tab.manuscript.meta.title,
-                                }}
-                                style={{
-                                  maxWidth: 250,
-                                  marginBottom: 0,
-                                  userSelect: "none",
-                                }}
+                                ellipsis={{ tooltip: tab.manuscript.meta.title }}
+                                style={{ maxWidth: 250, marginBottom: 0, userSelect: "none" }}
                               >
                                 {tab.manuscript.meta.title}
                               </Typography.Paragraph>
@@ -259,26 +302,25 @@ const EditPage: FC = () => {
                         };
                       })}
                     />
-                  );
-                }}
-              </Form.List>
-            ) : (
-              <Form.Item name="config" noStyle>
-                <EditConfig />
-              </Form.Item>
-            )}
+                  )}
+                </Form.List>
+              ) : (
+                <Form.Item name="config" noStyle>
+                  <EditConfig />
+                </Form.Item>
+              )}
+            </div>
           </div>
-        </Flex>
-      </Flex>
+        </div>
+      </Form>
+
       <AddFetchedArticle
         open={state.openArticleModal}
-        setOpen={(open) => {
-          state.openArticleModal = open;
-        }}
+        setOpen={(open) => { state.openArticleModal = open; }}
         brandId={state.brandId}
         onChange={handleAddArticle}
       />
-    </Form>
+    </div>
   );
 };
 

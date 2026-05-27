@@ -1,12 +1,11 @@
 "use client";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useReactive } from "ahooks";
 import { generateManuscript } from "@/utils/generateManuscript";
 import { useGlobalState } from "@/state/globalState";
 import { Config } from "@videofy/types";
 import Cookies from "universal-cookie";
 import {
-  Alert,
   App,
   Button,
   Card,
@@ -15,7 +14,6 @@ import {
   Input,
   Select,
   Spin,
-  Typography,
 } from "antd";
 import { useRouter } from "next/navigation";
 import {
@@ -27,27 +25,35 @@ import {
   useBrands,
   useFetchers,
 } from "@/api";
-import { LoadingOutlined } from "@ant-design/icons";
+import { LoadingOutlined, VideoCameraOutlined } from "@ant-design/icons";
+import Image from "next/image";
 
-const { Title, Paragraph } = Typography;
 const cookies = new Cookies();
 
+const FETCHER_ID = "web";
+const BRAND_ID = "2secure";
+
+const DURATION_OPTIONS = [
+  { value: 10, label: "10 sekunder" },
+  { value: 15, label: "15 sekunder" },
+  { value: 20, label: "20 sekunder" },
+  { value: 25, label: "25 sekunder" },
+  { value: 30, label: "30 sekunder" },
+];
+
 type FormType = {
-  fetcherId: string;
-  brandId: string;
   prompt: string;
   inputs: Record<string, string>;
+  targetDuration: number;
 };
 
 const StartPage = () => {
   const { data: fetchers, isLoading: loadingFetchers } = useFetchers();
   const { data: brands, isLoading: loadingBrands } = useBrands();
-  const hasFetchers = Boolean(fetchers && fetchers.length > 0);
-  const hasBrands = Boolean(brands && brands.length > 0);
 
   const state = useReactive({
     loading: false,
-    loadingMessage: "Generating video...",
+    loadingMessage: "Skapar video...",
   });
   const { notification } = App.useApp();
   const {
@@ -60,107 +66,40 @@ const StartPage = () => {
   } = useGlobalState();
 
   const [form] = Form.useForm<FormType>();
-  const selectedFetcherId = Form.useWatch("fetcherId", form);
-  const selectedBrandId = Form.useWatch("brandId", form);
-  const selectedFetcher = useMemo(
-    () => fetchers?.find((fetcher) => fetcher.id === selectedFetcherId),
-    [fetchers, selectedFetcherId]
-  );
-  const selectedFetcherFields = useMemo(
-    () =>
-      (selectedFetcher?.fields || []).filter((field) => field.name !== "project_id"),
-    [selectedFetcher]
-  );
-  const selectedBrand = useMemo(
-    () => brands?.find((brand) => brand.id === selectedBrandId),
-    [brands, selectedBrandId]
-  );
-  const lastSyncedBrandId = useRef<string | undefined>(undefined);
+  const lastSyncedBrand = useRef(false);
+
+  useEffect(() => {
+    if (!brands || brands.length === 0 || lastSyncedBrand.current) return;
+    const brand = brands.find((b) => b.id === BRAND_ID) || brands[0];
+    form.setFieldsValue({ prompt: brand.scriptPrompt || "" });
+    lastSyncedBrand.current = true;
+  }, [brands, form]);
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (!fetchers || fetchers.length === 0) {
-      return;
-    }
-    const currentFetcherId = form.getFieldValue("fetcherId");
-    if (currentFetcherId) {
-      return;
-    }
-    form.setFieldsValue({
-      fetcherId: fetchers[0].id,
-      inputs: {},
-    });
-  }, [fetchers, form]);
-
-  useEffect(() => {
-    if (!brands || brands.length === 0) {
-      return;
-    }
-    const currentBrandId = form.getFieldValue("brandId");
-    if (currentBrandId) {
-      return;
-    }
-    const initialBrand = brands[0];
-    form.setFieldsValue({
-      brandId: initialBrand.id,
-      prompt: initialBrand.scriptPrompt || "",
-    });
-  }, [brands, form]);
-
-  useEffect(() => {
-    if (!brands || brands.length === 0 || !selectedBrandId) {
-      return;
-    }
-    if (lastSyncedBrandId.current === selectedBrandId) {
-      return;
-    }
-    const selectedBrand = brands.find((brand) => brand.id === selectedBrandId);
-    if (!selectedBrand) {
-      return;
-    }
-    const nextPrompt = selectedBrand.scriptPrompt || "";
-    const currentPrompt = form.getFieldValue("prompt") || "";
-    if (nextPrompt !== currentPrompt) {
-      form.setFields([{ name: "prompt", value: nextPrompt }]);
-    }
-    lastSyncedBrandId.current = selectedBrandId;
-  }, [brands, form, selectedBrandId]);
-
-  useEffect(() => {
-    if (!selectedFetcherId) {
-      return;
-    }
-    form.setFieldValue("inputs", {});
-  }, [selectedFetcherId, form]);
-
   const loadManuscript = async (values: FormType) => {
-    const { prompt, fetcherId, brandId } = values;
-    const customPrompt = (prompt || "").trim();
-    const selected = fetchers?.find((fetcher) => fetcher.id === fetcherId);
-    if (!selected) {
-      notification.error({ title: "Fetcher not found." });
-      return;
-    }
+    const customPrompt = (values.prompt || "").trim();
+
     const brand =
-      brands?.find((item) => item.id === brandId) ||
-      (await getBrands()).find((item) => item.id === brandId);
+      brands?.find((item) => item.id === BRAND_ID) ||
+      (await getBrands()).find((item) => item.id === BRAND_ID);
     if (!brand) {
-      notification.error({ title: "Brand not found." });
+      notification.error({ title: "Varumärket 2Secure hittades inte." });
       return;
     }
+
     state.loading = true;
-    state.loadingMessage = "Fetching article...";
+    state.loadingMessage = "Hämtar innehåll...";
     try {
       const fetchResult = await runFetcherPlugin({
-        fetcherId,
+        fetcherId: FETCHER_ID,
         inputs: values.inputs || {},
       });
 
-      state.loadingMessage = "Applying brand settings...";
-      await setProjectBrand(fetchResult.projectId, brand.id);
+      state.loadingMessage = "Tillämpar varumärkesinställningar...";
+      await setProjectBrand(fetchResult.projectId, BRAND_ID);
 
-      state.loadingMessage = "Loading project configuration...";
+      state.loadingMessage = "Laddar projektkonfiguration...";
       const [projects, configs] = await Promise.all([getProjects(), getConfigs()]);
       const project = projects.find((p) => p.id === fetchResult.projectId) || {
         id: fetchResult.projectId,
@@ -171,7 +110,7 @@ const StartPage = () => {
       const configRow = configs.find((c) => c.projectId === fetchResult.projectId);
       const config = configRow?.config;
       if (!configRow || !config) {
-        throw new Error(`Config not found for project '${fetchResult.projectId}'`);
+        throw new Error(`Konfiguration hittades inte för projekt '${fetchResult.projectId}'`);
       }
 
       const customizedConfig: Config = {
@@ -184,11 +123,15 @@ const StartPage = () => {
 
       setConfig({ ...configRow, config: customizedConfig });
 
-      state.loadingMessage = "Generating manuscript...";
-      const manuscript = await generateManuscript(fetchResult.projectId, customizedConfig);
+      state.loadingMessage = "Genererar manus...";
+      const manuscript = await generateManuscript(
+        fetchResult.projectId,
+        customizedConfig,
+        values.targetDuration ?? 15,
+      );
 
       if (!manuscript) {
-        throw new Error("Backend did not return a manuscript");
+        throw new Error("Inget manus returnerades från servern");
       }
 
       const cleanedManuscript = {
@@ -215,14 +158,14 @@ const StartPage = () => {
         method: "POST",
         body: JSON.stringify({
           projectId: fetchResult.projectId,
-          brandId: brand.id,
+          brandId: BRAND_ID,
           config: customizedConfig,
           project,
           data: tabsData,
         }),
       });
       if (!response.ok) {
-        throw new Error("Failed to create generation");
+        throw new Error("Kunde inte skapa generation");
       }
       const { id: generationId } = await response.json();
 
@@ -234,136 +177,197 @@ const StartPage = () => {
       if (error instanceof Error) {
         notification.error({ title: error.message, duration: 0 });
       } else {
-        notification.error({ title: "Failed to fetch article", duration: 0 });
+        notification.error({ title: "Kunde inte hämta innehåll", duration: 0 });
       }
     } finally {
       state.loading = false;
-      state.loadingMessage = "Generating video...";
+      state.loadingMessage = "Skapar video...";
     }
   };
 
   if (loadingFetchers || loadingBrands) {
     return (
-      <Spin description="Loading fetchers and brands..." fullscreen delay={500} />
+      <Flex align="center" justify="center" style={{ minHeight: "100vh" }}>
+        <Spin description="Laddar..." />
+      </Flex>
     );
   }
 
   return (
-    <Flex vertical gap="middle" align="center" className="mt-4 mb-4">
-      <Title style={{ fontSize: 60, marginBottom: 10, marginTop: 40 }}>
-        Videofy
-      </Title>
-      <Paragraph style={{ marginBottom: 36 }}>
-        Select a fetcher, provide inputs, and generate a video.
-      </Paragraph>
-      <Card style={{ width: "100%", maxWidth: "80ch" }}>
-        {!hasFetchers && (
-          <Alert
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="No fetchers found"
-            description="Add fetchers under minimal/fetchers/<fetcherId>/fetcher.json, then refresh."
-          />
-        )}
-        {!hasBrands && (
-          <Alert
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="No brands found"
-            description="Add brand json files under minimal/brands/, then refresh."
-          />
-        )}
-        <Form form={form} onFinish={loadManuscript} layout="vertical">
-          <Form.Item name="fetcherId" label="Fetcher" rules={[{ required: true }]}>
-            <Select
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              disabled={!hasFetchers}
-              options={fetchers?.map((fetcher) => ({
-                value: fetcher.id,
-                label: fetcher.title,
-              }))}
-            />
-          </Form.Item>
-          {selectedFetcher && selectedFetcher.description && (
-            <Paragraph type="secondary" style={{ marginTop: -8 }}>
-              {selectedFetcher.description}
-            </Paragraph>
-          )}
-          {selectedFetcherFields.map((field) => (
+    <div style={{ minHeight: "100vh", backgroundColor: "#f0f4f8" }}>
+      {/* Header */}
+      <header style={{
+        backgroundColor: "#05141F",
+        padding: "0 40px",
+        height: 64,
+        display: "flex",
+        alignItems: "center",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+      }}>
+        <Image
+          src="/assets/2secure-logo-neg.png"
+          alt="2Secure"
+          width={120}
+          height={36}
+          style={{ objectFit: "contain" }}
+        />
+      </header>
+
+      {/* Hero */}
+      <div style={{
+        background: "linear-gradient(135deg, #05141F 0%, #03556D 100%)",
+        padding: "64px 40px 80px",
+        textAlign: "center",
+      }}>
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          backgroundColor: "rgba(126,179,188,0.2)",
+          marginBottom: 20,
+        }}>
+          <VideoCameraOutlined style={{ fontSize: 26, color: "#7EB3BC" }} />
+        </div>
+        <h1 style={{
+          color: "#FFFFFF",
+          fontSize: 42,
+          fontWeight: 700,
+          letterSpacing: "-0.5px",
+          margin: "0 0 12px",
+        }}>
+          Videomaker
+        </h1>
+        <p style={{
+          color: "#7EB3BC",
+          fontSize: 17,
+          margin: 0,
+          maxWidth: 480,
+          marginInline: "auto",
+        }}>
+          Klistra in en URL — vi skapar ett färdigt videomanus åt dig.
+        </p>
+      </div>
+
+      {/* Form card */}
+      <div style={{
+        maxWidth: 680,
+        margin: "-32px auto 60px",
+        padding: "0 24px",
+      }}>
+        <Card
+          style={{
+            borderRadius: 12,
+            boxShadow: "0 4px 24px rgba(5,20,31,0.12)",
+            border: "none",
+          }}
+          styles={{ body: { padding: "32px 36px" } }}
+        >
+          <Form form={form} onFinish={loadManuscript} layout="vertical" initialValues={{ targetDuration: 15 }}>
             <Form.Item
-              key={field.name}
-              name={["inputs", field.name]}
-              label={field.label}
-              preserve={false}
-              rules={
-                field.required
-                  ? [{ required: true, message: `${field.label} is required` }]
-                  : undefined
+              name={["inputs", "url"]}
+              label={
+                <span style={{ fontWeight: 600, color: "#05141F", fontSize: 14 }}>
+                  Artikel-URL
+                </span>
               }
+              rules={[{ required: true, message: "Ange en URL" }]}
+              style={{ marginBottom: 20 }}
             >
-              <Input placeholder={field.placeholder} />
+              <Input
+                placeholder="https://www.example.com/artikel..."
+                size="large"
+                style={{ borderRadius: 8, borderColor: "#d0dde6" }}
+              />
             </Form.Item>
-          ))}
-          <Form.Item name="brandId" label="Brand" rules={[{ required: true }]}>
-            <Select
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              disabled={!hasBrands}
-              options={brands?.map((brand) => ({
-                value: brand.id,
-                label: brand.brandName,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item noStyle>
+
             <Form.Item
-              label="Custom prompt"
+              name="targetDuration"
+              label={
+                <span style={{ fontWeight: 600, color: "#05141F", fontSize: 14 }}>
+                  Klipplängd
+                </span>
+              }
+              style={{ marginBottom: 20 }}
+            >
+              <Select
+                options={DURATION_OPTIONS}
+                size="large"
+                style={{ borderRadius: 8 }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <span style={{ fontWeight: 600, color: "#05141F", fontSize: 14 }}>
+                  Anpassat manus-prompt{" "}
+                  <span style={{ fontWeight: 400, color: "#7EB3BC" }}>(valfritt)</span>
+                </span>
+              }
               name="prompt"
-              style={{ marginBottom: 0 }}
+              style={{ marginBottom: 24 }}
             >
-              <Input.TextArea rows={10} />
+              <Input.TextArea
+                rows={8}
+                style={{ borderRadius: 8, borderColor: "#d0dde6", fontSize: 13, color: "#333" }}
+              />
             </Form.Item>
-          </Form.Item>
-          {selectedBrand ? (
-            <Paragraph type="secondary" style={{ marginTop: 8 }}>
-              Prompt source: {selectedBrand.brandName}
-            </Paragraph>
-          ) : null}
-          <Form.Item style={{ marginTop: 16 }}>
-            {state.loading ? (
-              <Button
-                type="primary"
-                size="large"
-                icon={<LoadingOutlined spin />}
-                disabled
-              >
-                {state.loadingMessage}
-              </Button>
-            ) : (
-              <Button
-                htmlType="submit"
-                type="primary"
-                size="large"
-                disabled={!hasFetchers || !hasBrands}
-              >
-                Generate video
-              </Button>
-            )}
-          </Form.Item>
-        </Form>
-      </Card>
-    </Flex>
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              {state.loading ? (
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<LoadingOutlined spin />}
+                  disabled
+                  style={{
+                    backgroundColor: "#03556D",
+                    borderColor: "#03556D",
+                    borderRadius: 8,
+                    height: 48,
+                    paddingInline: 32,
+                    fontSize: 15,
+                    fontWeight: 600,
+                  }}
+                >
+                  {state.loadingMessage}
+                </Button>
+              ) : (
+                <Button
+                  htmlType="submit"
+                  type="primary"
+                  size="large"
+                  icon={<VideoCameraOutlined />}
+                  style={{
+                    backgroundColor: "#03556D",
+                    borderColor: "#03556D",
+                    borderRadius: 8,
+                    height: 48,
+                    paddingInline: 32,
+                    fontSize: 15,
+                    fontWeight: 600,
+                  }}
+                >
+                  Skapa video
+                </Button>
+              )}
+            </Form.Item>
+          </Form>
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <footer style={{
+        textAlign: "center",
+        paddingBottom: 32,
+        color: "#8fa3b1",
+        fontSize: 13,
+      }}>
+        © 2Secure AB – Kontrollerar risk. Skapar trygghet.
+      </footer>
+    </div>
   );
 };
 

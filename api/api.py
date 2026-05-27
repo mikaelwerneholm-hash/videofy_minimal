@@ -97,6 +97,7 @@ def generate_project(
         manuscript = state.pipeline.generate_manuscript(
             project_id,
             script_prompt_override=payload.script_prompt,
+            target_duration_seconds=payload.target_duration_seconds,
         )
     except ProjectStoreError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -123,7 +124,7 @@ def process_project(
     state: AppState = Depends(get_state),
 ) -> GenerationResponse:
     try:
-        processed = state.pipeline.process_manuscript(project_id, payload.manuscript)
+        processed = state.pipeline.process_manuscript(project_id, payload.manuscript, voice_id=payload.voice_id)
     except ProjectStoreError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ConfigResolverError as exc:

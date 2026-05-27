@@ -5,8 +5,8 @@ import Main from "./Main";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 
 export const metadata: Metadata = {
-  title: "Videofy",
-  description: "Generate videos from articles using AI with videofy",
+  title: "2Secure Videomaker",
+  description: "Skapa och redigera videor för 2Secure",
 };
 
 export default function RootLayout({

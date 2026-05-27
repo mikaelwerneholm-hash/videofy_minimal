@@ -102,12 +102,12 @@ const TimeInputWithButtons: FC<TimeInputProps> = ({
           },
         ]}
       >
-        <Input placeholder="i.e. 2:01.25 or 2:05:04" />
+        <Input placeholder="t.ex. 2:01.25 eller 2:05:04" />
       </Form.Item>
-      <Tooltip title="Set to current video position">
+      <Tooltip title="Hämta aktuell position">
         <Button icon={<ArrowDownOutlined />} onClick={handleSetToCurrent} />
       </Tooltip>
-      <Tooltip title="Set video to this position">
+      <Tooltip title="Hoppa till denna position">
         <Button icon={<ArrowUpOutlined />} onClick={handleSetVideoToPosition} />
       </Tooltip>
     </Space.Compact>
@@ -186,7 +186,7 @@ const EditVideo = ({
               <source src={video.url} type="video/mp4" />
             </video>
           </Form.Item>
-          <Form.Item label="Start at (M.SS.SS, i.e. 10:12.25)">
+          <Form.Item label="Starta vid (M.SS.SS, t.ex. 10:12.25)">
             <TimeInputWithButtons
               fieldName="start"
               form={form}
@@ -194,7 +194,7 @@ const EditVideo = ({
               duration={duration}
             />
           </Form.Item>
-          <Form.Item label="End at (M.SS.SS, i.e. 10:12.25)">
+          <Form.Item label="Avsluta vid (M.SS.SS, t.ex. 10:12.25)">
             <TimeInputWithButtons
               fieldName="end"
               form={form}
@@ -211,25 +211,25 @@ const EditVideo = ({
       <Alert
         className="mb-4"
         type="info"
-        message="External video provider integrations are disabled in minimal mode. Use local files or direct URLs."
+        message="Externa videoleverantörer är inaktiverade. Använd lokala filer eller direkta URL:er."
       />
 
-      <Typography.Text strong>Replace video by URL</Typography.Text>
+      <Typography.Text strong>Ersätt video med URL</Typography.Text>
       <Form<{ videoUrl?: string }>
         form={replaceForm}
         layout="vertical"
         onFinish={handleReplaceWithUrl}
       >
         <Form.Item
-          label="Video URL"
+          label="Video-URL"
           name="videoUrl"
-          rules={[{ required: true, message: "Please enter a local video URL" }]}
+          rules={[{ required: true, message: "Ange en video-URL" }]}
         >
-          <Input placeholder="http://127.0.0.1:8001/projects/<id>/files/input/videos/file.mp4" />
+          <Input placeholder="http://127.0.0.1:8001/projects/<id>/files/input/videos/fil.mp4" />
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit">
-            Use URL
+            Använd URL
           </Button>
         </Form.Item>
       </Form>

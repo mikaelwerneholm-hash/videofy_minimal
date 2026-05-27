@@ -99,6 +99,7 @@ export const segmentSchema = z.object({
   cameraMovement: cameraMovementsEnum,
   images: z.array(mediaAssetSchema).optional(),
   mainMedia: mediaAssetSchema.optional(),
+  voiceDelay: z.number().optional(),
   customAudio: z
     .object({
       src: z.string().optional(),

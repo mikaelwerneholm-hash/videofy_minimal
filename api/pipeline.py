@@ -80,6 +80,7 @@ class PipelineService:
         article: ArticleInput,
         resolved_config: ResolvedConfig,
         script_prompt_override: str | None,
+        target_duration_seconds: int | None = None,
     ) -> list[str]:
         if article.script_lines:
             return article.script_lines
@@ -90,6 +91,13 @@ class PipelineService:
             else None
         )
         script_prompt = override_prompt or resolved_config.script_prompt
+
+        if target_duration_seconds:
+            target_segments = max(1, round(target_duration_seconds / 5))
+            script_prompt = (
+                script_prompt
+                + f"\n\nVIKTIGT: Manuskriptet ska bestå av exakt {target_segments} meningar."
+            )
 
         return self.llm_service.summarize_into_lines(
             text=article.text,
@@ -340,6 +348,7 @@ class PipelineService:
         self,
         project_id: str,
         script_prompt_override: str | None = None,
+        target_duration_seconds: int | None = None,
     ) -> Manuscript:
         logger.info("[pipeline:%s] Manuscript generation started", project_id)
         self.store.ensure_layout(project_id)
@@ -368,6 +377,7 @@ class PipelineService:
             article=article,
             resolved_config=resolved_config,
             script_prompt_override=script_prompt_override,
+            target_duration_seconds=target_duration_seconds,
         )
         logger.info(
             "[pipeline:%s] Script lines resolved (lines=%d)",
@@ -481,9 +491,22 @@ class PipelineService:
             if resolved_config.segment_pause_seconds is not None
             else self.settings.segment_pause_seconds
         )
+        lead_silence_seconds = resolved_config.lead_silence_seconds
+        tail_silence_seconds = resolved_config.tail_silence_seconds
         total_line_count = sum(len(segment.texts) for segment in manuscript.segments)
         rendered_line_count = 0
         pause_audio_clip_path: Path | None = None
+
+        if lead_silence_seconds > 0:
+            lead_path = (
+                self.store.project_path(project_id)
+                / "working"
+                / "audio"
+                / f"lead-{int(lead_silence_seconds * 1000)}ms.mp3"
+            )
+            self.tts_service.create_silence_mp3(lead_silence_seconds, lead_path)
+            rendered_audio_clips.append(lead_path)
+            current_timeline_seconds += lead_silence_seconds
         logger.info(
             "[pipeline:%s] Audio rendering started (segments=%d, lines=%d, segment_pause=%.2fs)",
             project_id,
@@ -494,6 +517,19 @@ class PipelineService:
 
         for segment_index, segment in enumerate(manuscript.segments, start=1):
             segment_start_seconds = current_timeline_seconds
+
+            voice_delay = segment.voiceDelay or 0.0
+            if voice_delay > 0:
+                vd_path = (
+                    self.store.project_path(project_id)
+                    / "working"
+                    / "audio"
+                    / f"vd-seg{segment_index}-{int(voice_delay * 1000)}ms.mp3"
+                )
+                self.tts_service.create_silence_mp3(voice_delay, vd_path)
+                rendered_audio_clips.append(vd_path)
+                current_timeline_seconds += voice_delay
+
             for text_line in segment.texts:
                 next_line_number = rendered_line_count + 1
                 logger.info(
@@ -510,8 +546,11 @@ class PipelineService:
                     / "audio"
                     / f"line-{text_line.line_id:03}.mp3"
                 )
+                tts_text = text_line.text
+                for source, replacement in resolved_config.tts_substitutions.items():
+                    tts_text = tts_text.replace(source, replacement)
                 self.tts_service.synthesize_line(
-                    text=text_line.text,
+                    text=tts_text,
                     output_mp3=line_audio_clip_path,
                     voice_id=resolved_config.voice_id,
                     model_id=resolved_config.tts_model_id,
@@ -543,7 +582,7 @@ class PipelineService:
                     rendered_audio_clips.append(pause_audio_clip_path)
                     current_timeline_seconds += segment_pause_seconds
 
-            segment.start = round(segment_start_seconds, 3)
+            segment.start = 0.0 if (lead_silence_seconds > 0 and segment_index == 1) else round(segment_start_seconds, 3)
             segment.end = round(max((text_line.end or segment_start_seconds) for text_line in segment.texts), 3)
             segment.text = "\n\n".join([text_line.displayText or text_line.text for text_line in segment.texts])
             logger.info(
@@ -555,6 +594,17 @@ class PipelineService:
                 segment.end,
             )
 
+        if tail_silence_seconds > 0 and manuscript.segments:
+            tail_path = (
+                self.store.project_path(project_id)
+                / "working"
+                / "audio"
+                / f"tail-{int(tail_silence_seconds * 1000)}ms.mp3"
+            )
+            self.tts_service.create_silence_mp3(tail_silence_seconds, tail_path)
+            rendered_audio_clips.append(tail_path)
+            manuscript.segments[-1].end = round(manuscript.segments[-1].end + tail_silence_seconds, 3)
+
         logger.info(
             "[pipeline:%s] Audio rendering completed (clips=%d)",
             project_id,
@@ -562,13 +612,15 @@ class PipelineService:
         )
         return rendered_audio_clips
 
-    def process_manuscript(self, project_id: str, manuscript: Manuscript | None = None) -> Manuscript:
+    def process_manuscript(self, project_id: str, manuscript: Manuscript | None = None, voice_id: str | None = None) -> Manuscript:
         logger.info("[pipeline:%s] Manuscript processing started", project_id)
         self.store.ensure_layout(project_id)
         logger.info("[pipeline:%s] Step 1/4: Resolving processing config", project_id)
         generation_manifest = self.store.load_generation_manifest(project_id)
         resolved_config = self.config_resolver.resolve(generation_manifest)
-        logger.info("[pipeline:%s] Processing config resolved", project_id)
+        if voice_id:
+            resolved_config.voice_id = voice_id
+        logger.info("[pipeline:%s] Processing config resolved (voice_id=%s)", project_id, resolved_config.voice_id)
 
         logger.info("[pipeline:%s] Step 2/4: Loading manuscript", project_id)
         manuscript_to_process = self._load_manuscript_for_processing(project_id, manuscript)

@@ -21,19 +21,23 @@ import { logAIData } from "@/actions/logAIData";
 const videoTypes = [
   {
     name: "Vertical",
-    description: "Vertical video (1080x1920)",
+    description: "Stående video (1080x1920)",
+  },
+  {
+    name: "Square",
+    description: "Kvadratisk video (1080x1080)",
   },
   {
     name: "Horizontal",
-    description: "Horizontal video (1920x1080)",
+    description: "Liggande video (1920x1080)",
   },
   {
     name: "Sound only",
-    description: "Narration audio (mp3)",
+    description: "Berättarröst (mp3)",
   },
   {
     name: "Videofy Project",
-    description: "Project file (JSON)",
+    description: "Projektfil (JSON)",
   },
 ];
 
@@ -116,7 +120,7 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
     state.downloadUrl = undefined;
 
     const orientation =
-      values.exportType === "Horizontal" ? "horizontal" : "vertical";
+      values.exportType === "Horizontal" ? "horizontal" : values.exportType === "Square" ? "square" : "vertical";
 
     try {
       const response = await fetch("/api/render/local", {
@@ -169,10 +173,10 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
         await logAIData(processedManuscripts, generationId);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Okänt fel";
       state.error = message;
       notification.error({
-        title: "Download failed",
+        title: "Nedladdning misslyckades",
         description: message,
         duration: 0,
       });
@@ -189,7 +193,7 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
 
   return (
     <Modal open={open} onCancel={() => setOpen(false)} footer={null}>
-      <Typography.Title level={2}>Download</Typography.Title>
+      <Typography.Title level={2}>Ladda ned video</Typography.Title>
 
       <Form<FormType>
         form={downloadForm}
@@ -216,7 +220,7 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
               : true,
         }}
       >
-        <Form.Item name="exportType" label="Export type">
+        <Form.Item name="exportType" label="Exportformat">
           <Radio.Group
             style={{
               display: "flex",
@@ -232,21 +236,21 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
           />
         </Form.Item>
 
-        <Form.Item label="Title" name="title">
+        <Form.Item label="Titel" name="title">
           <Input className="w-full" />
         </Form.Item>
 
         <Flex gap="middle">
-          <Form.Item label="Logo" name="logo" valuePropName="checked">
+          <Form.Item label="Logotyp" name="logo" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Form.Item label="Audio" name="audio" valuePropName="checked">
+          <Form.Item label="Ljud" name="audio" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Form.Item label="Voiceover" name="voice" valuePropName="checked">
+          <Form.Item label="Röstöver" name="voice" valuePropName="checked">
             <Switch />
           </Form.Item>
-          <Form.Item label="Music" name="music" valuePropName="checked">
+          <Form.Item label="Musik" name="music" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Flex>
@@ -255,15 +259,15 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
           <Form.Item shouldUpdate>
             {({ getFieldValue }) => {
               const exportType = getFieldValue("exportType");
-              let buttonText = "Process video";
+              let buttonText = "Bearbeta video";
               if (exportType === "Videofy Project") {
-                buttonText = "Download";
+                buttonText = "Ladda ned";
               } else if (exportType === "Sound only") {
-                buttonText = "Download audio";
+                buttonText = "Ladda ned ljud";
               } else if (state.isProcessing) {
-                buttonText = "Rendering locally...";
+                buttonText = "Renderar lokalt...";
               } else if (state.downloadUrl) {
-                buttonText = "Re-render";
+                buttonText = "Rendera om";
               }
 
               return (
@@ -288,7 +292,7 @@ const DownloadModal: FC<Props> = ({ open, setOpen }) => {
                 type="primary"
                 size="large"
               >
-                Download video
+                Ladda ned video
               </Button>
             </Form.Item>
           )}

@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, type FC } from "react";
+import { useEffect, type FC } from "react";
 import { useReactive } from "ahooks";
-import { App, Button, Form, Input, Modal, Select, Spin, Typography } from "antd";
+import { App, Button, Form, Input, Modal, Spin } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
-import { runFetcherPlugin, setProjectBrand, useFetchers } from "@/api";
+import { runFetcherPlugin, setProjectBrand } from "@/api";
 import { generateManuscript } from "@/utils/generateManuscript";
 import { Tab, useGlobalState } from "@/state/globalState";
 
+const FETCHER_ID = "web";
+
 type FormType = {
-  fetcherId: string;
   inputs: Record<string, string>;
 };
 
@@ -27,72 +28,42 @@ const AddFetchedArticle: FC<AddFetchedArticleProps> = ({
   onChange,
 }) => {
   const [form] = Form.useForm<FormType>();
-  const { data: fetchers, isLoading: loadingFetchers } = useFetchers();
   const { config } = useGlobalState();
   const { notification } = App.useApp();
 
   const state = useReactive({
     loading: false,
-    loadingMessage: "Fetching article...",
+    loadingMessage: "Hämtar artikel...",
   });
 
-  const selectedFetcherId = Form.useWatch("fetcherId", form);
-  const selectedFetcher = useMemo(
-    () => fetchers?.find((fetcher) => fetcher.id === selectedFetcherId),
-    [fetchers, selectedFetcherId]
-  );
-  const fields = useMemo(
-    () =>
-      (selectedFetcher?.fields || []).filter((field) => field.name !== "project_id"),
-    [selectedFetcher]
-  );
-
   useEffect(() => {
-    if (!fetchers || fetchers.length === 0) {
-      return;
-    }
-    const currentFetcherId = form.getFieldValue("fetcherId");
-    if (currentFetcherId) {
-      return;
-    }
-    form.setFieldsValue({
-      fetcherId: fetchers[0].id,
-      inputs: {},
-    });
-  }, [fetchers, form]);
-
-  useEffect(() => {
-    if (!selectedFetcherId) {
-      return;
-    }
-    form.setFieldValue("inputs", {});
-  }, [selectedFetcherId, form]);
+    if (!open) return;
+    form.setFieldsValue({ inputs: {} });
+  }, [open, form]);
 
   const handleClose = () => {
-    if (state.loading) {
-      return;
-    }
+    if (state.loading) return;
     setOpen(false);
     form.resetFields();
   };
 
   const handleAddArticle = async (values: FormType) => {
     if (!config?.config) {
-      notification.error({ title: "Config is not loaded yet." });
+      notification.error({ title: "Konfigurationen är inte laddad ännu." });
       return;
     }
     state.loading = true;
-    state.loadingMessage = "Fetching article...";
+    state.loadingMessage = "Hämtar artikel...";
     try {
       const fetchResult = await runFetcherPlugin({
-        fetcherId: values.fetcherId,
+        fetcherId: FETCHER_ID,
         inputs: values.inputs || {},
       });
 
-      state.loadingMessage = "Applying brand settings...";
-      await setProjectBrand(fetchResult.projectId, brandId || "default");
+      state.loadingMessage = "Tillämpar varumärkesinställningar...";
+      await setProjectBrand(fetchResult.projectId, brandId || "2secure");
 
-      state.loadingMessage = "Generating manuscript...";
+      state.loadingMessage = "Genererar manus...";
       const manuscript = await generateManuscript(fetchResult.projectId, config.config);
       const cleanedManuscript = {
         ...manuscript,
@@ -112,73 +83,43 @@ const AddFetchedArticle: FC<AddFetchedArticleProps> = ({
       setOpen(false);
       form.resetFields();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to add article";
+      const message = error instanceof Error ? error.message : "Kunde inte lägga till artikel";
       notification.error({ title: message, duration: 0 });
     } finally {
       state.loading = false;
-      state.loadingMessage = "Fetching article...";
+      state.loadingMessage = "Hämtar artikel...";
     }
   };
 
   return (
     <Modal
-      title="Add Article"
+      title="Lägg till artikel"
       open={open}
       onCancel={handleClose}
       width={700}
       footer={[
         <Button key="cancel" onClick={handleClose} disabled={state.loading}>
-          Cancel
+          Avbryt
         </Button>,
         <Button
           key="submit"
           type="primary"
           icon={state.loading ? <LoadingOutlined spin /> : undefined}
           onClick={() => form.submit()}
-          disabled={loadingFetchers}
         >
-          {state.loading ? state.loadingMessage : "Add Article"}
+          {state.loading ? state.loadingMessage : "Lägg till artikel"}
         </Button>,
       ]}
     >
-      {loadingFetchers ? (
-        <Spin description="Loading fetchers..." />
-      ) : (
-        <Form form={form} layout="vertical" onFinish={handleAddArticle}>
-          <Form.Item name="fetcherId" label="Fetcher" rules={[{ required: true }]}>
-            <Select
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-              }
-              options={fetchers?.map((fetcher) => ({
-                value: fetcher.id,
-                label: fetcher.title,
-              }))}
-            />
-          </Form.Item>
-          {selectedFetcher?.description ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
-              {selectedFetcher.description}
-            </Typography.Paragraph>
-          ) : null}
-          {fields.map((field) => (
-            <Form.Item
-              key={field.name}
-              name={["inputs", field.name]}
-              label={field.label}
-              preserve={false}
-              rules={
-                field.required
-                  ? [{ required: true, message: `${field.label} is required` }]
-                  : undefined
-              }
-            >
-              <Input placeholder={field.placeholder} />
-            </Form.Item>
-          ))}
-        </Form>
-      )}
+      <Form form={form} layout="vertical" onFinish={handleAddArticle}>
+        <Form.Item
+          name={["inputs", "url"]}
+          label="Artikel-URL"
+          rules={[{ required: true, message: "Ange en URL" }]}
+        >
+          <Input placeholder="https://www.example.com/artikel..." />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 };
