@@ -4,32 +4,16 @@ import { z } from "zod";
 import {
   GenerationManifest,
   configOverridePath,
-  generationManifestPath,
-  listProjectIds,
   readJson,
   writeJson,
 } from "@/lib/projectFiles";
 import { resolveConfigForProject } from "@/lib/configResolver";
+import { dataApiFetch } from "@/lib/backend";
 
 type ConfigRow = {
   projectId: string;
   config: unknown;
 };
-
-const manifestSchema = z.object({
-  projectId: z.string().min(1),
-  brandId: z.string().min(1),
-  promptPack: z.string().min(1),
-  voicePack: z.string().min(1),
-  options: z
-    .object({
-      orientationDefault: z.enum(["vertical", "horizontal", "square"]).optional(),
-      segmentPauseSeconds: z.number().optional(),
-    })
-    .optional(),
-  createdAt: z.string().min(1),
-  updatedAt: z.string().min(1),
-});
 
 const saveSchema = z.object({
   projectId: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
@@ -43,31 +27,23 @@ function toErrorMessage(error: unknown): string {
   return "Unexpected error";
 }
 
-async function readManifest(projectId: string): Promise<GenerationManifest | null> {
-  const raw = await readJson<unknown>(generationManifestPath(projectId), null);
-  const parsed = manifestSchema.safeParse(raw);
-  if (!parsed.success) {
-    return null;
-  }
-  return parsed.data;
-}
-
 export async function GET() {
   try {
-    const projectIds = await listProjectIds();
-    const configs: ConfigRow[] = [];
+    const projectsRes = await dataApiFetch("/api/projects");
+    const { projects: projectIds } = await projectsRes.json() as { projects: string[] };
 
+    const configs: ConfigRow[] = [];
     for (const projectId of projectIds) {
-      const manifest = await readManifest(projectId);
-      if (!manifest) {
+      try {
+        const manifestRes = await dataApiFetch(`/api/projects/${projectId}/manifest`);
+        if (!manifestRes.ok) continue;
+        const manifest = await manifestRes.json() as GenerationManifest;
+        if (!manifest?.projectId) continue;
+        const config = await resolveConfigForProject(projectId, manifest);
+        configs.push({ projectId, config });
+      } catch {
         continue;
       }
-
-      const config = await resolveConfigForProject(projectId, manifest);
-      configs.push({
-        projectId,
-        config,
-      });
     }
 
     return NextResponse.json(configs);

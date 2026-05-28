@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appConfigSchema, manuscriptSchema } from "@videofy/types";
 import { z } from "zod";
-import { cmsGenerationPath, listProjectIds, readJson, writeJson } from "@/lib/projectFiles";
+import { dataApiFetch } from "@/lib/backend";
 
 const projectIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
 
@@ -11,23 +11,6 @@ const generationTabSchema = z.object({
   projectId: projectIdSchema.optional(),
   backendGenerationId: z.string().min(1).optional(),
 });
-
-type GenerationTab = z.infer<typeof generationTabSchema>;
-type GenerationConfig = z.infer<typeof appConfigSchema>;
-
-type GenerationRecord = {
-  id: string;
-  projectId: string;
-  data: GenerationTab[];
-  config?: GenerationConfig;
-  brandId?: string;
-  project?: {
-    id: string;
-    name: string;
-  };
-  createdDate: string;
-  updatedAt: string;
-};
 
 const postBodySchema = z.object({
   projectId: projectIdSchema.optional(),
@@ -61,11 +44,9 @@ function normalizeId(rawId: string): string {
   } catch {
     throw new Error("Invalid generation id");
   }
-
   if (!projectIdSchema.safeParse(decodedId).success) {
     throw new Error("Invalid generation id");
   }
-
   return decodedId;
 }
 
@@ -81,7 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const generation: GenerationRecord = {
+    const generation = {
       id: projectId,
       projectId,
       data: body.data,
@@ -92,8 +73,18 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     };
 
-    await writeJson(cmsGenerationPath(projectId), generation);
-    return NextResponse.json({ id: generation.id });
+    const res = await dataApiFetch("/api/cms-generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(generation),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json({ id: projectId });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
@@ -112,16 +103,17 @@ export async function GET(req: NextRequest) {
 
   try {
     const projectId = normalizeId(id);
-    const generation = await readJson<GenerationRecord | null>(
-      cmsGenerationPath(projectId),
-      null
-    );
+    const res = await dataApiFetch(`/api/cms-generations?id=${encodeURIComponent(projectId)}`);
 
-    if (!generation) {
+    if (res.status === 404) {
       return NextResponse.json({ error: "Generation not found" }, { status: 404 });
     }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return NextResponse.json(data, { status: res.status });
+    }
 
-    return NextResponse.json(generation);
+    return NextResponse.json(await res.json());
   } catch (error) {
     if (error instanceof Error && error.message === "Invalid generation id") {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -135,30 +127,17 @@ export async function PUT(req: NextRequest) {
     const body = putBodySchema.parse(await req.json());
     const projectId = normalizeId(body.id);
 
-    const existing = await readJson<GenerationRecord | null>(
-      cmsGenerationPath(projectId),
-      null
-    );
+    const res = await dataApiFetch(`/api/cms-generations?id=${encodeURIComponent(projectId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: body.data }),
+    });
 
-    if (!existing) {
-      const knownProjects = await listProjectIds();
-      if (!knownProjects.includes(projectId)) {
-        return NextResponse.json({ error: "Generation not found" }, { status: 404 });
-      }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return NextResponse.json(data, { status: res.status });
     }
 
-    const next: GenerationRecord = {
-      id: projectId,
-      projectId,
-      config: existing?.config,
-      brandId: existing?.brandId,
-      project: existing?.project || { id: projectId, name: projectId },
-      data: body.data,
-      createdDate: existing?.createdDate || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await writeJson(cmsGenerationPath(projectId), next);
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "Invalid generation id") {

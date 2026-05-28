@@ -6,6 +6,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, '..'),
+  outputFileTracingIncludes: {
+    "/api/**": [
+      path.join(__dirname, '..', 'brands', '**'),
+      path.join(__dirname, '..', 'brand_assets', '**'),
+      path.join(__dirname, '..', 'fetchers', '**'),
+    ],
+  },
   productionBrowserSourceMaps: true,
   logging: {
     fetches: {

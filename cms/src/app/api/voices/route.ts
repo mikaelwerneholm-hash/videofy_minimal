@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { join } from "node:path";
 import { readdir } from "node:fs/promises";
-import { configRoot, generationManifestPath, readJson } from "@/lib/projectFiles";
+import { configRoot, readJson } from "@/lib/projectFiles";
+import { dataApiFetch } from "@/lib/backend";
 
 type VoiceOption = { id: string; name: string };
 
@@ -50,13 +51,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "projectId required" }, { status: 400 });
     }
 
-    const manifest = await readJson<{ brandId?: string }>(
-      generationManifestPath(projectId),
-      {}
-    );
-    const brandId = manifest.brandId || "default";
-    const voices = await readBrandVoices(brandId);
+    let brandId = "2secure";
+    try {
+      const manifestRes = await dataApiFetch(`/api/projects/${projectId}/manifest`);
+      if (manifestRes.ok) {
+        const manifest = await manifestRes.json() as { brandId?: string };
+        brandId = manifest.brandId || "2secure";
+      }
+    } catch {
+      // fall back to default brand
+    }
 
+    const voices = await readBrandVoices(brandId);
     return NextResponse.json({ voices });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

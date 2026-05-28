@@ -170,3 +170,34 @@ class UploadResponse(BaseModel):
 
 class SummarizationResult(BaseModel):
     lines: list[str]
+
+
+class ImportWebRequest(BaseModel):
+    url: str
+    brand_id: str = "2secure"
+
+
+class ImportWebResponse(BaseModel):
+    project_id: str
+    stdout: str = ""
+    stderr: str = ""
+
+
+class ManifestUpdateRequest(BaseModel):
+    brandId: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")]
+
+
+class CmsGenerationRecord(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    id: str
+    projectId: str
+    data: list[Any] = Field(default_factory=list)
+    config: Any = None
+    brandId: str | None = None
+    project: Any = None
+    createdDate: str
+    updatedAt: str
+
+
+class CmsGenerationUpdateRequest(BaseModel):
+    data: list[Any] = Field(default_factory=list)

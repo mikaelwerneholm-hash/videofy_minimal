@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
+import re
+import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
@@ -11,7 +16,17 @@ from fastapi.responses import FileResponse
 from .config_resolver import ConfigResolverError
 from .pipeline import PipelineService
 from .project_store import ProjectStore, ProjectStoreError
-from .schemas import GenerateRequest, GenerationResponse, ProcessRequest, UploadResponse
+from .schemas import (
+    CmsGenerationRecord,
+    CmsGenerationUpdateRequest,
+    GenerateRequest,
+    GenerationResponse,
+    ImportWebRequest,
+    ImportWebResponse,
+    ManifestUpdateRequest,
+    ProcessRequest,
+    UploadResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +178,136 @@ def get_project_article(project_id: str, state: AppState = Depends(get_state)) -
         return article.model_dump(mode="json", exclude_none=True)
     except ProjectStoreError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+def _parse_project_id_from_output(stdout: str, stderr: str) -> str | None:
+    combined = f"{stdout}\n{stderr}"
+    direct = re.search(r"Created project:\s*([A-Za-z0-9][A-Za-z0-9._-]*)", combined)
+    if direct:
+        return direct.group(1)
+    from_path = re.search(r"/projects/([A-Za-z0-9][A-Za-z0-9._-]*)", combined)
+    if from_path:
+        return from_path.group(1)
+    return None
+
+
+@router.post("/import/web", response_model=ImportWebResponse)
+def import_web(payload: ImportWebRequest, state: AppState = Depends(get_state)) -> ImportWebResponse:
+    fetcher_script = Path(__file__).parent.parent / "fetchers" / "web" / "fetcher.py"
+    if not fetcher_script.exists():
+        raise HTTPException(status_code=500, detail="Web fetcher script not found")
+
+    projects_root = str(state.store.root)
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(fetcher_script),
+            payload.url,
+            "--projects-root",
+            projects_root,
+            "--force",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    stdout = result.stdout or ""
+    stderr = result.stderr or ""
+
+    if result.returncode != 0:
+        detail = (stderr or stdout or "Fetcher failed").strip()
+        raise HTTPException(status_code=400, detail=f"Fetcher failed: {detail}")
+
+    project_id = _parse_project_id_from_output(stdout, stderr)
+    if not project_id:
+        raise HTTPException(status_code=500, detail="Could not determine project id from fetcher output")
+
+    try:
+        manifest = state.store.load_generation_manifest(project_id)
+        manifest.brandId = payload.brand_id
+        manifest.promptPack = payload.brand_id
+        manifest.voicePack = payload.brand_id
+        state.store.save_generation_manifest(manifest)
+    except Exception as exc:
+        logger.warning("[api] could not update manifest for %s: %s", project_id, exc)
+
+    return ImportWebResponse(project_id=project_id, stdout=stdout, stderr=stderr)
+
+
+@router.patch("/projects/{project_id}/manifest")
+def update_project_manifest(
+    project_id: str,
+    payload: ManifestUpdateRequest,
+    state: AppState = Depends(get_state),
+) -> dict:
+    try:
+        manifest = state.store.load_generation_manifest(project_id)
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    manifest.brandId = payload.brandId
+    manifest.promptPack = payload.brandId
+    manifest.voicePack = payload.brandId
+    state.store.save_generation_manifest(manifest)
+    return manifest.model_dump(mode="json")
+
+
+@router.get("/projects/{project_id}/manifest")
+def get_project_manifest(project_id: str, state: AppState = Depends(get_state)) -> dict:
+    try:
+        manifest = state.store.load_generation_manifest(project_id)
+        return manifest.model_dump(mode="json")
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/cms-generations")
+def create_cms_generation(payload: CmsGenerationRecord, state: AppState = Depends(get_state)) -> dict:
+    try:
+        state.store.ensure_layout(payload.projectId)
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    gen_path = state.store.project_path(payload.projectId) / "working" / "cms-generation.json"
+    gen_path.write_text(payload.model_dump_json(), encoding="utf-8")
+    return {"id": payload.id}
+
+
+@router.get("/cms-generations")
+def get_cms_generation(id: str, state: AppState = Depends(get_state)) -> dict:
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", id):
+        raise HTTPException(status_code=400, detail="Invalid generation id")
+
+    try:
+        gen_path = state.store.project_path(id) / "working" / "cms-generation.json"
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not gen_path.exists():
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    return json.loads(gen_path.read_text(encoding="utf-8"))
+
+
+@router.put("/cms-generations")
+def update_cms_generation(payload: CmsGenerationUpdateRequest, id: str, state: AppState = Depends(get_state)) -> dict:
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", id):
+        raise HTTPException(status_code=400, detail="Invalid generation id")
+
+    try:
+        gen_path = state.store.project_path(id) / "working" / "cms-generation.json"
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not gen_path.exists():
+        raise HTTPException(status_code=404, detail="Generation not found")
+
+    existing = json.loads(gen_path.read_text(encoding="utf-8"))
+    existing["data"] = payload.data
+    existing["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    gen_path.write_text(json.dumps(existing), encoding="utf-8")
+    return {"success": True}
 
 
 def create_files_router(state: AppState) -> APIRouter:
