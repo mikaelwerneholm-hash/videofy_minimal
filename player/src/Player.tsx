@@ -1,5 +1,6 @@
 import { Player as RemotionPlayer, type PlayerRef } from "@remotion/player";
 import { forwardRef, type CSSProperties } from "react";
+import type React from "react";
 import type { z } from "zod";
 import { ArticlesSeries } from "./ArticlesSeries";
 import {
@@ -42,8 +43,10 @@ export const Player = forwardRef<PlayerRef, Props>(
 
     if (totalDuration === 0) return <div {...rest} />;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const RemotionPlayerAny = RemotionPlayer as any;
     return (
-      <RemotionPlayer
+      <RemotionPlayerAny
         ref={ref}
         component={ArticlesSeries}
         inputProps={{
