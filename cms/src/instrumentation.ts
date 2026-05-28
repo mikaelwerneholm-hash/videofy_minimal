@@ -4,11 +4,6 @@
 export async function register() {
   // Only run on the server
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    if (process.env.MINIMAL_PREWARM_REMOTION_BUNDLE !== 'false') {
-      const { prewarmRemotionBundle } = await import("@/lib/remotionRender");
-      prewarmRemotionBundle();
-    }
-
     // Log unhandled rejections with full details
     process.on('unhandledRejection', (reason, promise) => {
       console.error('=== UNHANDLED REJECTION ===');
