@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { playerSchema, processedManuscriptSchema } from "@videofy/types";
 import { z } from "zod";
-import { renderProjectVideo } from "@/lib/remotionRender";
 
 export const runtime = "nodejs";
 
@@ -24,26 +23,18 @@ function toErrorMessage(error: unknown): string {
 
 export async function POST(request: Request) {
   try {
-    const body = bodySchema.parse(await request.json());
-
-    await renderProjectVideo({
-      projectId: body.projectId,
-      orientation: body.orientation,
-      manuscripts: body.manuscripts,
-      playerConfig: body.playerConfig,
-      voice: body.voice,
-      backgroundMusic: body.backgroundMusic,
-      disabledLogo: body.disabledLogo,
-    });
-
-    const fileBase = process.env.MINIMAL_FILE_BASE_URL || "http://127.0.0.1:8001";
-    return NextResponse.json({
-      downloadUrl: `${fileBase}/projects/${body.projectId}/files/output/render-${body.orientation}.mp4`,
-    });
+    bodySchema.parse(await request.json());
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    return NextResponse.json({ error: toErrorMessage(error) }, { status: 500 });
+    return NextResponse.json({ error: toErrorMessage(error) }, { status: 400 });
   }
+
+  // Remotion rendering requires a local environment with Chromium and a persistent filesystem.
+  // On cloud deployments, trigger rendering via the local API server instead.
+  return NextResponse.json(
+    { error: "Video rendering is not available in this deployment. Run the CMS locally to render videos." },
+    { status: 503 }
+  );
 }
