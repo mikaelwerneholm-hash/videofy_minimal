@@ -1,12 +1,11 @@
-import { readdir, readFile } from "node:fs/promises";
 import type { Config } from "@videofy/types";
 import { buildDefaultConfig } from "@/lib/defaultConfig";
 import {
   GenerationManifest,
   configOverridePath,
-  configRoot,
   readJson,
 } from "@/lib/projectFiles";
+import { dataApiFetch } from "@/lib/backend";
 
 function deepMerge(base: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...base };
@@ -28,39 +27,19 @@ function deepMerge(base: Record<string, unknown>, patch: Record<string, unknown>
   return out;
 }
 
-async function readObject(filePath: string): Promise<Record<string, unknown>> {
-  try {
-    const raw = await readFile(filePath, "utf-8");
-    const parsed = JSON.parse(raw);
-    return typeof parsed === "object" && parsed ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
 async function readBrandObject(brandId: string): Promise<Record<string, unknown>> {
-  const brandsDir = configRoot();
-  const directPath = `${brandsDir}/${brandId}.json`;
-  const direct = await readObject(directPath);
-  if (Object.keys(direct).length > 0) {
-    return direct;
-  }
-
   try {
-    const entries = await readdir(brandsDir, { withFileTypes: true });
-    const jsonFiles = entries
-      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
-      .map((entry) => entry.name)
-      .sort((a, b) => a.localeCompare(b));
-    if (jsonFiles.length === 0) {
-      return {};
+    const res = await dataApiFetch(`/api/brands/${encodeURIComponent(brandId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === "object" && Object.keys(data).length > 0) {
+        return data as Record<string, unknown>;
+      }
     }
-    const fallback =
-      jsonFiles.find((fileName) => fileName.toLowerCase() === "default.json") || jsonFiles[0];
-    return await readObject(`${brandsDir}/${fallback}`);
   } catch {
-    return {};
+    // fall through to empty
   }
+  return {};
 }
 
 export async function resolveConfigForProject(

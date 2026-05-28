@@ -180,6 +180,55 @@ def get_project_article(project_id: str, state: AppState = Depends(get_state)) -
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.get("/brands")
+def list_brands(state: AppState = Depends(get_state)) -> dict:
+    config_root = state.pipeline.config_resolver.config_root  # Path to brands directory
+    brands = []
+    try:
+        for json_file in sorted(config_root.glob("*.json")):
+            brand_id = json_file.stem
+            try:
+                raw = json.loads(json_file.read_text(encoding="utf-8"))
+                brands.append({
+                    "id": brand_id,
+                    "brandName": raw.get("brand_name") or brand_id,
+                    "scriptPrompt": (raw.get("prompts") or {}).get("scriptPrompt") or "",
+                })
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return {"brands": brands}
+
+
+@router.get("/brands/{brand_id}")
+def get_brand(brand_id: str, state: AppState = Depends(get_state)) -> dict:
+    config_root = state.pipeline.config_resolver.config_root
+    brand_file = config_root / f"{brand_id}.json"
+    if not brand_file.exists():
+        brand_file = config_root / "default.json"
+    if not brand_file.exists():
+        raise HTTPException(status_code=404, detail=f"Brand '{brand_id}' not found")
+    try:
+        return json.loads(brand_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/brands/{brand_id}/voices")
+def get_brand_voices(brand_id: str, state: AppState = Depends(get_state)) -> dict:
+    config_root = state.pipeline.config_resolver.config_root
+    brand_file = config_root / f"{brand_id}.json"
+    if not brand_file.exists():
+        raise HTTPException(status_code=404, detail=f"Brand '{brand_id}' not found")
+    try:
+        raw = json.loads(brand_file.read_text(encoding="utf-8"))
+        voices = raw.get("voices") or []
+        return {"voices": voices}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 def _parse_project_id_from_output(stdout: str, stderr: str) -> str | None:
     combined = f"{stdout}\n{stderr}"
     direct = re.search(r"Created project:\s*([A-Za-z0-9][A-Za-z0-9._-]*)", combined)
